@@ -26,9 +26,11 @@ export default function ItemCard({ item }) {
     await supabase.from("items").delete().eq("id", item.id);
   }
 
-  const mapLink =
-    item.place_url ||
-    `https://map.naver.com/p/search/${encodeURIComponent(item.name)}`;
+  const mapLink = item.place_url
+    ? item.place_url
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        item.address ? `${item.name} ${item.address}` : item.name
+      )}`;
 
   return (
     <div
@@ -42,6 +44,14 @@ export default function ItemCard({ item }) {
         onChange={toggleChecked}
         className="mt-1 w-4 h-4 accent-black shrink-0"
       />
+      {item.image_url && (
+        <img
+          src={item.image_url}
+          alt=""
+          className="w-14 h-14 rounded-lg object-cover shrink-0 bg-gray-100"
+          onError={(e) => (e.currentTarget.style.display = "none")}
+        />
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span
@@ -68,9 +78,14 @@ export default function ItemCard({ item }) {
             rel="noreferrer"
             className="text-blue-500 hover:underline"
           >
-            네이버 지도에서 보기
+            {item.place_url ? "네이버 지도에서 보기" : "지도에서 보기"}
           </a>
         </div>
+        {item.memo && (
+          <div className="mt-1.5 text-xs text-gray-500 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1.5 whitespace-pre-wrap">
+            📝 {item.memo}
+          </div>
+        )}
       </div>
       <button
         onClick={handleDelete}

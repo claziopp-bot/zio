@@ -52,11 +52,16 @@ export default function Home() {
   const doneCount = items.filter((i) => i.checked).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white">
+    <div className="min-h-screen">
       <header className="border-b border-gray-100 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">🧳 여행 어떡할려</h1>
+            <h1
+              className="text-2xl tracking-wide"
+              style={{ fontFamily: "'Black Han Sans', sans-serif" }}
+            >
+              🧳 여행 어떡할려
+            </h1>
             <p className="text-xs text-gray-400 mt-0.5">
               가고 싶은 곳 생각날 때마다 바로바로 추가해요
             </p>
