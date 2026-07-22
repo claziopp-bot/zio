@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 const CATEGORY_OPTIONS = ["맛집", "카페", "체험", "기타"];
 const CATEGORY_EMOJI = { 맛집: "🍜", 카페: "☕", 체험: "🎡", 기타: "📍" };
 
-export default function AddItemForm({ myName, onAdded }) {
+export default function AddItemForm({ myName, tripId, onAdded }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState(null); // 네이버 검색으로 고른 장소
@@ -64,6 +64,7 @@ export default function AddItemForm({ myName, onAdded }) {
 
     setLoading(true);
     const { error } = await supabase.from("items").insert({
+      trip_id: tripId,
       name,
       category,
       address: selected?.address || manualAddress || null,

@@ -1,87 +1,114 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import CategoryTabs from "@/components/CategoryTabs";
-import AddItemForm from "@/components/AddItemForm";
-import ItemCard from "@/components/ItemCard";
-import MapView from "@/components/MapView";
+
+function formatRange(start, end) {
+  if (!start && !end) return null;
+  const fmt = (d) => {
+    const [, m, day] = d.split("-");
+    return `${Number(m)}/${Number(day)}`;
+  };
+  if (start && end) return `${fmt(start)} - ${fmt(end)}`;
+  return fmt(start || end);
+}
 
 export default function Home() {
+  const router = useRouter();
   const [myName, setMyName] = useState("");
   const [nameInput, setNameInput] = useState("");
-  const [items, setItems] = useState([]);
-  const [category, setCategory] = useState("전체");
+  const [trips, setTrips] = useState([]);
+  const [loadingTrips, setLoadingTrips] = useState(false);
+
+  const [showNewTrip, setShowNewTrip] = useState(false);
+  const [newTripName, setNewTripName] = useState("");
+  const [newStart, setNewStart] = useState("");
+  const [newEnd, setNewEnd] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("travel-checklist-name");
     if (saved) setMyName(saved);
   }, []);
 
-  function saveName(e) {
+  useEffect(() => {
+    if (myName) fetchTrips(myName);
+  }, [myName]);
+
+  async function fetchTrips(name) {
+    setLoadingTrips(true);
+    const { data, error } = await supabase
+      .from("trip_members")
+      .select("trips(id, name, start_date, end_date, created_at)")
+      .eq("member_name", name);
+
+    if (!error && data) {
+      const list = data
+        .map((row) => row.trips)
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setTrips(list);
+    }
+    setLoadingTrips(false);
+  }
+
+  function startWithName(e) {
     e.preventDefault();
     if (!nameInput.trim()) return;
     localStorage.setItem("travel-checklist-name", nameInput.trim());
     setMyName(nameInput.trim());
   }
 
-  async function fetchItems() {
-    const { data, error } = await supabase
-      .from("items")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error) setItems(data);
+  async function handleCreateTrip(e) {
+    e.preventDefault();
+    if (!newTripName.trim()) return;
+    setCreating(true);
+
+    const { data: trip, error } = await supabase
+      .from("trips")
+      .insert({
+        name: newTripName.trim(),
+        start_date: newStart || null,
+        end_date: newEnd || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      setCreating(false);
+      alert("여행 만들기 중 오류가 발생했어요.");
+      return;
+    }
+
+    await supabase.from("trip_members").insert({ trip_id: trip.id, member_name: myName });
+
+    setCreating(false);
+    router.push(`/trip/${trip.id}`);
   }
 
-  useEffect(() => {
-    fetchItems();
-
-    const channel = supabase
-      .channel("items-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "items" }, () => {
-        fetchItems();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const filtered = category === "전체" ? items : items.filter((i) => i.category === category);
-  const doneCount = items.filter((i) => i.checked).length;
-
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-gray-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1
-              className="text-2xl tracking-wide"
-              style={{ fontFamily: "'Black Han Sans', sans-serif" }}
-            >
-              🧳 여행 어떡할려
-            </h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              가고 싶은 곳 생각날 때마다 바로바로 추가해요
-            </p>
-          </div>
-          {items.length > 0 && (
-            <div className="text-xs text-gray-400 text-right shrink-0">
-              총 {items.length}곳 · 완료 {doneCount}곳
-            </div>
-          )}
+    <div className="min-h-screen px-4 py-10">
+      <div className="max-w-sm mx-auto space-y-4">
+        <div className="text-center">
+          <h1
+            className="text-2xl tracking-wide"
+            style={{ fontFamily: "'Black Han Sans', sans-serif" }}
+          >
+            🧳 여행 어떡할려
+          </h1>
+          <p className="text-xs text-gray-400 mt-1">
+            가고 싶은 곳 생각날 때마다 바로바로 추가해요
+          </p>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
         {!myName ? (
           <form
-            onSubmit={saveName}
-            className="max-w-sm mx-auto mt-16 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-3 text-center"
+            onSubmit={startWithName}
+            className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-3 text-center"
           >
             <div className="text-3xl">👋</div>
-            <p className="text-sm text-gray-500">이름을 입력하고 체크리스트에 참여해보세요</p>
+            <p className="text-sm text-gray-500">이름을 입력하고 내 여행 목록을 확인하세요</p>
             <input
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
@@ -94,43 +121,108 @@ export default function Home() {
             </button>
           </form>
         ) : (
-          <div className="grid lg:grid-cols-[1fr_420px] gap-5 items-start">
-            {/* 왼쪽: 추가 폼 + 리스트 */}
-            <div className="space-y-4 min-w-0">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">
-                  <b className="text-gray-800">{myName}</b> 님으로 참여중
-                </span>
-              </div>
-
-              <AddItemForm myName={myName} onAdded={fetchItems} />
-
-              <CategoryTabs selected={category} onSelect={setCategory} />
-
-              <div className="space-y-2 lg:hidden">
-                {/* 모바일: 지도를 리스트 위쪽에 작게 보여줌 */}
-                <MapView items={filtered} />
-              </div>
-
-              <div className="space-y-2">
-                {filtered.length === 0 && (
-                  <p className="text-center text-sm text-gray-400 py-16 bg-white rounded-2xl border border-dashed border-gray-200">
-                    아직 추가된 장소가 없어요. 위에서 첫 장소를 추가해보세요!
-                  </p>
-                )}
-                {filtered.map((item) => (
-                  <ItemCard key={item.id} item={item} />
-                ))}
-              </div>
+          <>
+            <div className="flex items-center justify-between text-sm px-1">
+              <span className="text-gray-500">
+                👋 <b className="text-gray-800">{myName}</b> 님의 여행
+              </span>
+              <button
+                onClick={() => {
+                  localStorage.removeItem("travel-checklist-name");
+                  setMyName("");
+                  setTrips([]);
+                }}
+                className="text-xs text-gray-400 underline"
+              >
+                이름 바꾸기
+              </button>
             </div>
 
-            {/* 오른쪽: 지도 (데스크탑에서 항상 고정 노출) */}
-            <div className="hidden lg:block sticky top-20 h-[calc(100vh-6rem)]">
-              <MapView items={filtered} />
+            <div className="space-y-2">
+              {loadingTrips && (
+                <p className="text-center text-sm text-gray-400 py-6">불러오는 중...</p>
+              )}
+
+              {!loadingTrips && trips.length === 0 && (
+                <p className="text-center text-sm text-gray-400 py-10 bg-white rounded-2xl border border-dashed border-gray-200">
+                  아직 참여 중인 여행이 없어요.
+                  <br />
+                  새 여행을 만들거나, 친구에게 받은 링크로 들어가보세요.
+                </p>
+              )}
+
+              {trips.map((trip) => {
+                const range = formatRange(trip.start_date, trip.end_date);
+                return (
+                  <button
+                    key={trip.id}
+                    onClick={() => router.push(`/trip/${trip.id}`)}
+                    className="w-full text-left bg-white rounded-2xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">✈️ {trip.name}</p>
+                      {range && <p className="text-xs text-gray-400 mt-0.5">{range}</p>}
+                    </div>
+                    <span className="text-gray-300">›</span>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+
+            {!showNewTrip ? (
+              <button
+                onClick={() => setShowNewTrip(true)}
+                className="w-full py-2.5 rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition"
+              >
+                + 새 여행 만들기
+              </button>
+            ) : (
+              <form
+                onSubmit={handleCreateTrip}
+                className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-2"
+              >
+                <input
+                  value={newTripName}
+                  onChange={(e) => setNewTripName(e.target.value)}
+                  placeholder="여행 이름 (예: 부산 여행)"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={newStart}
+                    onChange={(e) => setNewStart(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                  />
+                  <input
+                    type="date"
+                    value={newEnd}
+                    onChange={(e) => setNewEnd(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewTrip(false)}
+                    className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-500"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="flex-1 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {creating ? "만드는 중..." : "만들기"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
         )}
-      </main>
+      </div>
     </div>
   );
 }
