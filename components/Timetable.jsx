@@ -113,20 +113,40 @@ export default function Timetable({ tripId }) {
     if (error) {
       console.error(error);
       alert("하루 추가 중 오류가 발생했어요.");
+      return;
     }
+    fetchAll();
   }
 
   async function updateDate(dayId, date) {
-    await supabase.from("timetable_days").update({ date }).eq("id", dayId);
+    const { error } = await supabase.from("timetable_days").update({ date }).eq("id", dayId);
+    if (error) {
+      console.error(error);
+      alert("날짜 저장 중 오류: " + error.message);
+      return;
+    }
+    fetchAll();
   }
 
   async function deleteDay(dayId) {
     if (!confirm("이 날짜의 타임테이블을 통째로 삭제할까요?")) return;
-    await supabase.from("timetable_days").delete().eq("id", dayId);
+    const { error } = await supabase.from("timetable_days").delete().eq("id", dayId);
+    if (error) {
+      console.error(error);
+      alert("삭제 중 오류: " + error.message);
+      return;
+    }
+    fetchAll();
   }
 
   async function deleteEntry(entryId) {
-    await supabase.from("timetable_entries").delete().eq("id", entryId);
+    const { error } = await supabase.from("timetable_entries").delete().eq("id", entryId);
+    if (error) {
+      console.error(error);
+      alert("삭제 중 오류: " + error.message);
+      return;
+    }
+    fetchAll();
   }
 
   return (
