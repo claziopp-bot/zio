@@ -7,6 +7,7 @@ import CategoryTabs from "@/components/CategoryTabs";
 import AddItemForm from "@/components/AddItemForm";
 import ItemCard from "@/components/ItemCard";
 import MapView from "@/components/MapView";
+import Timetable from "@/components/Timetable";
 
 export default function TripPage() {
   const { id: tripId } = useParams();
@@ -18,6 +19,7 @@ export default function TripPage() {
   const [items, setItems] = useState([]);
   const [category, setCategory] = useState("전체");
   const [copied, setCopied] = useState(false);
+  const [timetableDays, setTimetableDays] = useState([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("travel-checklist-name");
@@ -71,6 +73,33 @@ export default function TripPage() {
     };
   }, [tripId]);
 
+  async function fetchTimetableDays() {
+    const { data } = await supabase
+      .from("timetable_days")
+      .select("id, date")
+      .eq("trip_id", tripId)
+      .order("created_at", { ascending: true });
+    setTimetableDays(data || []);
+  }
+
+  useEffect(() => {
+    if (!tripId) return;
+    fetchTimetableDays();
+
+    const channel = supabase
+      .channel(`timetable-days-list-${tripId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "timetable_days", filter: `trip_id=eq.${tripId}` },
+        fetchTimetableDays
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tripId]);
+
   function saveName(e) {
     e.preventDefault();
     if (!nameInput.trim()) return;
@@ -94,7 +123,7 @@ export default function TripPage() {
           <div className="min-w-0">
             <button
               onClick={() => router.push("/")}
-              className="text-xs text-gray-400 hover:text-indigo-600 mb-1"
+              className="text-xs text-gray-400 hover:text-pink-400 mb-1"
             >
               ← 내 여행 목록
             </button>
@@ -135,15 +164,19 @@ export default function TripPage() {
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               placeholder="이름 입력"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-pink-200"
               autoFocus
             />
-            <button className="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">
+            <button className="w-full py-2.5 rounded-lg bg-pink-400 text-white text-sm font-medium hover:bg-pink-500 transition">
               참여하기
             </button>
           </form>
         ) : (
-          <div className="grid lg:grid-cols-[1fr_420px] gap-5 items-start">
+          <div className="grid lg:grid-cols-[300px_1fr_380px] gap-5 items-start">
+            <div className="lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
+              <Timetable tripId={tripId} />
+            </div>
+
             <div className="space-y-4 min-w-0">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">
@@ -166,7 +199,7 @@ export default function TripPage() {
                   </p>
                 )}
                 {filtered.map((item) => (
-                  <ItemCard key={item.id} item={item} />
+                  <ItemCard key={item.id} item={item} tripId={tripId} days={timetableDays} />
                 ))}
               </div>
             </div>

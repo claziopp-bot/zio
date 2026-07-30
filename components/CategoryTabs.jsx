@@ -19,8 +19,8 @@ export default function CategoryTabs({ selected, onSelect }) {
           onClick={() => onSelect(cat)}
           className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap border transition ${
             selected === cat
-              ? "bg-indigo-600 text-white border-indigo-600"
-              : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
+              ? "bg-pink-400 text-white border-pink-400"
+              : "bg-white text-gray-600 border-gray-200 hover:border-pink-300"
           }`}
         >
           {EMOJI[cat]} {cat}

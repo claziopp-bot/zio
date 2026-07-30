@@ -113,10 +113,10 @@ export default function Home() {
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               placeholder="이름 입력"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-pink-200"
               autoFocus
             />
-            <button className="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">
+            <button className="w-full py-2.5 rounded-lg bg-pink-400 text-white text-sm font-medium hover:bg-pink-500 transition">
               시작하기
             </button>
           </form>
@@ -172,7 +172,7 @@ export default function Home() {
             {!showNewTrip ? (
               <button
                 onClick={() => setShowNewTrip(true)}
-                className="w-full py-2.5 rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition"
+                className="w-full py-2.5 rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 hover:border-pink-300 hover:text-pink-400 transition"
               >
                 + 새 여행 만들기
               </button>
@@ -185,7 +185,7 @@ export default function Home() {
                   value={newTripName}
                   onChange={(e) => setNewTripName(e.target.value)}
                   placeholder="여행 이름 (예: 부산 여행)"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
                   autoFocus
                 />
                 <div className="flex gap-2">
@@ -213,7 +213,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={creating}
-                    className="flex-1 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-50"
+                    className="flex-1 py-2 rounded-lg bg-pink-400 text-white text-sm hover:bg-pink-500 disabled:opacity-50"
                   >
                     {creating ? "만드는 중..." : "만들기"}
                   </button>

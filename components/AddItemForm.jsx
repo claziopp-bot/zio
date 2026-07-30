@@ -182,7 +182,7 @@ export default function AddItemForm({ myName, tripId, onAdded }) {
                 onClick={() => setCategory(c)}
                 className={`px-3 py-1.5 rounded-full text-xs border ${
                   category === c
-                    ? "bg-indigo-600 text-white border-indigo-600"
+                    ? "bg-pink-400 text-white border-pink-400"
                     : "bg-white text-gray-500 border-gray-200"
                 }`}
               >
@@ -193,7 +193,7 @@ export default function AddItemForm({ myName, tripId, onAdded }) {
           <button
             type="submit"
             disabled={loading}
-            className="ml-auto px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-50"
+            className="ml-auto px-4 py-2 rounded-lg bg-pink-400 text-white text-sm hover:bg-pink-500 disabled:opacity-50"
           >
             {loading ? "추가중..." : "+ 리스트에 추가"}
           </button>
